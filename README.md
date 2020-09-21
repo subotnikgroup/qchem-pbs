@@ -25,9 +25,9 @@ To easily switch between multiple Q-Chem branches (e.g.: my-dev-branch and trunk
 
 `qchem-pbs myqcjob.in --branch /path/to/my-dev-branch`
 
-QChem-PBS will set `$QC` appropriately and execute the Q-Chem you compiled. If you set the environmental variable `$QCRT` (e.g. in bash.rc) and my-branch is a subdirectory of `$QCRT` you can do the same with:
+QChem-PBS will set `$QC` appropriately and execute the Q-Chem you compiled. If you set the environmental variable `$QCRT` (e.g. in bash.rc) and my-branch is a subdirectory of `$QCRT`, you can do the same with:
 
-`qchem-pbs -i myqcjob.in -b my-dev-branch`
+`qchem-pbs myqcjob.in -b my-dev-branch`
 
 ### Test your environment
 The `--dry-run` option will check your Q-Chem environment and report errors:
