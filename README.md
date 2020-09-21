@@ -18,6 +18,8 @@ Invocation is often as simple as:
 
 Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing output to `myqcjob.out` with scratch files saved in `./run`.
 
+See `qchem-pbs -h` for help and more options including threads for parallel jobs and selecting memory limits.
+
 ### Branches
 To easily switch between multiple Q-Chem branches (e.g.: your-dev-branch and trunk), pass the `--branch` option:
 
@@ -40,8 +42,6 @@ Q-Chem requires that the variable QCAUX be set and exist!
 Q-Chem requires that the variable QCPLATFORM be set!
 ...
 ```
-
-See `qchem-pbs -h` for help and more options including threads for parallel jobs and selecting memory limits.
 
 ## Contributing
 Pull requests are welcome. Contact valecs@sas.upenn.edu if something seems broken.
