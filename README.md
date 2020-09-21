@@ -4,7 +4,11 @@ QChem-PBS executes Q-Chem on a node via the scheduling system. It can replace `o
 
 
 ## Installation
-Simply add `qchem-pbs` to your path, perhaps in `$HOME/bin`.
+Download code with:
+
+`git clone git@github.com:subotnikgroup/qchem-pbs.git`
+
+Then add `qchem-pbs` to your path, perhaps in `$HOME/bin`.
 
 
 ## Usage
