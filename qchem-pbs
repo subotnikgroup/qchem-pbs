@@ -13,7 +13,7 @@ import argparse
 import time
 
 
-ncpus = defaultdict(lambda: print("Warning: unknown cluster!") or 128,
+ncpus = defaultdict(lambda: print("Warning: unknown cluster---thread limit may be unreliable!") or 1024,
                     {'venus': 48,
                      'diabatical': 32,
                      'helium': 32,  # FIXME: is this correct?
@@ -121,7 +121,7 @@ def validate(args):
             invalid += 1
             print("Q-Chem requires that the variable", var, "be set and exist!")
 
-    if env("QCPLATFORM") is "":
+    if env("QCPLATFORM") == "":
         invalid += 1
         print("Q-Chem requires that the variable", "QCPLATFORM", "be set!")
 
