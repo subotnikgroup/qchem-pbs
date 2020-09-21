@@ -20,7 +20,8 @@ Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing ou
 
 The `--dry-run` option will check your Q-Chem environment and report errors:
 
-```qchem-pbs --dry-run -i test.in
+```
+qchem-pbs --dry-run -i test.in
 ...
 Valid Q-Chem install not found at $QC!
 $QCSCRATCH must be an absolute path!
