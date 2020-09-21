@@ -117,7 +117,7 @@ def validate(args):
         print("$QCSCRATCH must be an absolute path!")
 
     for var in ["QC_EXT_LIBS", "QCAUX"]:
-        if not Path(env(var)).exists():
+        if not Path(env(var)).is_absolute() or Path(env(var)).exists():
             invalid += 1
             print("Q-Chem requires that the variable", var, "be set and exist!")
 
