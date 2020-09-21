@@ -21,13 +21,13 @@ Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing ou
 See `qchem-pbs -h` for help and more options including threads for parallel jobs and selecting memory limits.
 
 ### Branches
-To easily switch between multiple Q-Chem branches (e.g.: your-dev-branch and trunk), pass the `--branch` option:
+To easily switch between multiple Q-Chem branches (e.g.: my-dev-branch and trunk), pass the `--branch` option:
 
-`qchem-pbs myqcjob.in --branch /path/to/my-branch`
+`qchem-pbs myqcjob.in --branch /path/to/my-dev-branch`
 
 QChem-PBS will set `$QC` appropriately and execute the Q-Chem you compiled. If you set the environmental variable `$QCRT` (e.g. in bash.rc) and my-branch is a subdirectory of `$QCRT` you can do the same with:
 
-`qchem-pbs -i myqcjob.in -b my-branch`
+`qchem-pbs -i myqcjob.in -b my-dev-branch`
 
 ### Test your environment
 The `--dry-run` option will check your Q-Chem environment and report errors:
