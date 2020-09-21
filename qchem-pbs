@@ -13,7 +13,7 @@ import argparse
 import time
 
 
-ncpus = defaultdict(lambda: 48,
+ncpus = defaultdict(lambda: print("Warning: unknown cluster!") or 128,
                     {'venus': 48,
                      'diabatical': 32,
                      'helium': 32,  # FIXME: is this correct?
@@ -158,7 +158,7 @@ def main():
         print(invalid, "invalid option(s); cannot proceed")
         exit(-1)
     else:
-        print("Finished checking input; no errors.")
+        print("Finished checking input.")
 
     if args.dry_run:
         exit(0)
