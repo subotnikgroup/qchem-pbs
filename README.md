@@ -18,6 +18,17 @@ Invocation is often as simple as:
 
 Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing output to `myqcjob.out` with scratch files saved in `./run`.
 
+The `--dry-run` option will check your Q-Chem environment and report errors:
+
+```qchem-pbs --dry-run -i test.in
+...
+Valid Q-Chem install not found at $QC!
+$QCSCRATCH must be an absolute path!
+Q-Chem requires that the variable QC_EXT_LIBS be set and exist!
+Q-Chem requires that the variable QCAUX be set and exist!
+Q-Chem requires that the variable QCPLATFORM be set!
+...
+```
 
 See `qchem-pbs -h` for help and more options including threads for parallel jobs and selecting between Q-Chem branches (e.g.: you-dev-branch vs. trunk). 
 
