@@ -27,13 +27,15 @@ def host():
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Execute Q-Chem on a node via PBS; MPI jobs not supported')
-    parser.add_argument("--input", "-i", metavar="INPUT", required=True, type=Path,
-                        help="Q-Chem input file")
+    parser.add_argument("input", metavar="QCINPUT", type=Path, help="Q-Chem input file")
+    parser.add_argument("--dry-run", "-n", default=False, action='store_true',
+                        help="Don't acutally launch the job; just verify settings")
+
     parser.add_argument("--output", "-o", metavar="OUTPUT", type=Path,
                         help="Q-Chem output file; determined automatically if omitted")
     parser.add_argument("--threads", "-t", metavar="THREADS", default=4, type=int,
                         help="Number of OpenMP threads to use; defaults to 4")
-    parser.add_argument("-mem", "-m", metavar="MEMORY", default=8192, type=int,
+    parser.add_argument("--mem", "-m", metavar="MEMORY", default=8192, type=int,
                         help="Max memory in MB; defaults to 8192")
     parser.add_argument("--branch", "-b", metavar="BRANCH", type=Path,
                         help="Full path to Q-Chem branch; if $QCRT is set, may simply be name of branch below $QCRT")
@@ -42,8 +44,6 @@ def getArgs():
     parser.add_argument("--out-dir", metavar="DIR", default="./run",
                         type=Path, help="Path to output files; defaults to ./run")
     # parser.add_argument("--wall", "-w", metavar="WALL", default="160:00:00", help="max wall-clock time, HH:MM:SS")
-    parser.add_argument("--dry-run", "-n", default=False, action='store_true',
-                        help="Don't acutally launch the job; just verify settings")
 
     return parser.parse_args()
 
@@ -117,7 +117,7 @@ def validate(args):
         print("$QCSCRATCH must be an absolute path!")
 
     for var in ["QC_EXT_LIBS", "QCAUX"]:
-        if not Path(env(var)).is_absolute() or Path(env(var)).exists():
+        if not Path(env(var)).is_absolute() or not Path(env(var)).exists():
             invalid += 1
             print("Q-Chem requires that the variable", var, "be set and exist!")
 
