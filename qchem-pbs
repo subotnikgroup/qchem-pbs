@@ -70,7 +70,7 @@ def validate(args):
 
     if not args.input.is_file():
         invalid += 1
-        print("Input file", args.input, "does not exist!")
+        print("Input file", args.input, "is not a file!")
 
     # FIXME: check input file for rem & molecule sections
 
@@ -115,6 +115,15 @@ def validate(args):
     if not args.qcscratch.is_absolute():
         invalid += 1
         print("$QCSCRATCH must be an absolute path!")
+
+    for var in ["QC_EXT_LIBS", "QCAUX"]:
+        if not Path(env(var)).exists():
+            invalid += 1
+            print("Q-Chem requires that the variable", var, "be set and exist!")
+
+    if env("QCPLATFORM") is "":
+        invalid += 1
+        print("Q-Chem requires that the variable", "QCPLATFORM", "be set!")
 
     return invalid
 
