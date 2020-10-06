@@ -43,7 +43,7 @@ def getArgs():
                         help="Path to input directory for restartable jobs")
     parser.add_argument("--out-dir", metavar="DIR", default="./run",
                         type=Path, help="Path to output files; defaults to ./run")
-    # parser.add_argument("--wall", "-w", metavar="WALL", default="160:00:00", help="max wall-clock time, HH:MM:SS")
+    parser.add_argument("--wall", "-w", metavar="WALL", default=120, type=float, help="max wall-clock time in hours")
 
     return parser.parse_args()
 
@@ -87,7 +87,12 @@ def validate(args):
         print("Must have at least 1 thread and no more than", tmax, "on", host(),"!")
     else:
         env("QCTHREADS", args.threads)
+        
+    if args.wall <= 0:
+        invalid += 1
+        print("Wall-clock time must be finite!")
 
+        
     if args.mem <= 0:
         invalid += 1
         print("Memory requested must be finite!")
@@ -135,6 +140,8 @@ def getScript(args):
     scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
     temp    = args.qcscratch / Path(name).with_suffix("." + str(time.time() % 10))
 
+    script.append('#!/bin/sh')
+    script.append('echo job starts at $(date)')
     script.append(f'mkdir -p {scratch}')
 
     if args.in_dir is not None:
@@ -145,7 +152,8 @@ def getScript(args):
 
     script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch}"')
     script.append(f'mv -T "{scratch}" "{args.out_dir.absolute()}"')
-
+    script.append('echo job completes at $(date)')
+    
     # return "\n".join(script)
     return b"\n".join(map(lambda s: bytes(s, encoding="ascii"), script))
 
@@ -175,8 +183,7 @@ def main():
             "-N", str(args.input.stem),
             "-l", "nodes=1:ppn=" + str(args.threads),
             "-l", "mem=" + str(args.mem) + "mb",
-            # FIXME: include walltime
-            # "-l", "walltime=" + str(args.wall),
+            "-l", "walltime=" + str(args.wall*3600),
             ]
 
     subprocess.run(qsub, input=script)
