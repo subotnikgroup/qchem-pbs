@@ -29,20 +29,21 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Execute Q-Chem on a node via PBS; MPI jobs not supported')
     parser.add_argument("input", metavar="QCINPUT", type=Path, help="Q-Chem input file")
     parser.add_argument("--dry-run", "-n", default=False, action='store_true',
-                        help="Don't acutally launch the job; just verify settings")
+                        help="Don't acutally launch the job; just verify parameters")
 
     parser.add_argument("--output", "-o", metavar="OUTPUT", type=Path,
-                        help="Q-Chem output file; determined automatically if omitted")
+                        help="Q-Chem output file; determined automatically from input if omitted")
     parser.add_argument("--threads", "-t", metavar="THREADS", default=4, type=int,
                         help="Number of OpenMP threads to use; defaults to 4")
     parser.add_argument("--mem", "-m", metavar="MEMORY", default=8192, type=int,
                         help="Max memory in MB; defaults to 8192")
     parser.add_argument("--branch", "-b", metavar="BRANCH", type=Path,
                         help="Full path to Q-Chem branch; if $QCRT is set, may simply be name of branch below $QCRT")
-    parser.add_argument("--in-dir", metavar="DIR", type=Path,
-                        help="Path to input directory for restartable jobs")
-    parser.add_argument("--out-dir", metavar="DIR", default="./run",
+    parser.add_argument("--outdir", metavar="ODIR", default="./run",
                         type=Path, help="Path to output files; defaults to ./run")
+    parser.add_argument("--save", default=False, action='store_true', help="save scratch files to ODIR/scratch")
+    parser.add_argument("--indir", metavar="IDIR", type=Path,
+                        help="Path to input directory for restartable jobs (ODIR/scratch from a previous job)")
     parser.add_argument("--wall", "-w", metavar="WALL", default=120, type=float, help="max wall-clock time in hours")
 
     return parser.parse_args()
@@ -72,8 +73,6 @@ def validate(args):
         invalid += 1
         print("Input file", args.input, "is not a file!")
 
-    # FIXME: check input file for rem & molecule sections
-
     if args.output is None:
         args.output = args.input.with_suffix(".out")
 
@@ -97,9 +96,9 @@ def validate(args):
         invalid += 1
         print("Memory requested must be finite!")
 
-    if args.in_dir is not None and not args.in_dir.is_dir():
+    if args.indir is not None and not args.indir.is_dir():
         invalid += 1
-        print("Input directory", args.in_dir, "is not a directory!")
+        print("Input directory", args.indir, "is not a directory!")
 
     if args.branch is not None:
         if isValidQC(args.branch):
@@ -115,7 +114,6 @@ def validate(args):
         invalid += 1
         print("Valid Q-Chem install not found at $QC!")
 
-    # FIXME: allow setting QCSCRATCH from CLI
     args.qcscratch = Path(env("QCSCRATCH"))
     if not args.qcscratch.is_absolute():
         invalid += 1
@@ -134,33 +132,44 @@ def validate(args):
 
 
 def getScript(args):
+    """This function works by building up a list of shell (or pbs)
+    statements and then joining them all together in a bytestream"""
+
     script = []
 
     name = args.input.stem
     scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
     temp    = args.qcscratch / Path(name).with_suffix("." + str(time.time() % 10))
-
+    # Where QChem will actually run from
+    run = Path("scratch")
+    
     script.append('#!/bin/sh')
     script.append('echo job starts at $(date)')
-    script.append(f'mkdir -p {scratch}')
+    script.append('echo')
+    script.append(f'mkdir -p {scratch / run}')
 
-    if args.in_dir is not None:
-        script.append(f'cp -a "{args.in_dir.absolute()}" "{temp}"')
-        script.append(f'mv -T "{temp}" "{scratch}"')
+    if args.indir is not None:
+        script.append(f'cp -a "{args.indir.absolute()}" "{temp}"')
+        script.append(f'mv -T "{temp}" "{scratch / run}"')
 
     script.append(f'cd "{scratch}"')
 
-    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch}"')
-    script.append(f'mv -T "{scratch}" "{args.out_dir.absolute()}"')
+    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch / run}"')
+    if not args.save:
+        script.append(f"rm -rf {run}")
+        
+    #script.append(f'mv -T "{scratch}" "{args.outdir.absolute()}"')
+    # trailing slash required to copy contents from scratch
+    script.append(f'rsync -ar "{scratch}/." "{args.outdir.absolute()}"')
+    script.append('echo')
     script.append('echo job completes at $(date)')
     
-    # return "\n".join(script)
     return b"\n".join(map(lambda s: bytes(s, encoding="ascii"), script))
 
 
 def main():
     args = getArgs()
-    invalid = validate(args)  # sets $QCTHREADS & $QC, guarantees $QCSCRATCH exists
+    invalid = validate(args)  # validates & sets $QCTHREADS, $QC, etc...
 
     if invalid > 0:
         print(invalid, "invalid option(s); cannot proceed")
@@ -171,11 +180,9 @@ def main():
     if args.dry_run:
         exit(0)
 
-    args.out_dir.mkdir(parents=True, exist_ok=True)
+    args.outdir.mkdir(parents=True, exist_ok=True)
 
-    # FIXME: should we have a way to choose between the inplace and copying script?
-    script = b"$QC/exe/qcprog.exe " + bytes(args.input.absolute()) + b" " + bytes(args.out_dir.absolute()) + b"\n"
-    # FIXME: should we use the qchem script?
+    # FIXME: Use the qchem script to support multi-job files with @@@
     script = getScript(args)
 
     qsub = ["qsub", "-V", "-j", "oe",
