@@ -44,7 +44,7 @@ def getArgs():
                         type=Path, help="Path to output scratch files; defaults to ./run")
     parser.add_argument("--indir", metavar="IDIR", type=Path,
                         help="Path to input directory for restartable jobs (ODIR from a previous job)")
-    parser.add_argument("--wall", "-w", metavar="WALL", default=120, type=float, help="max wall-clock time in hours")
+    parser.add_argument("--wall", "-w", metavar="WALL", default=12, type=float, help="max wall-clock time in hours (defaults to 12)")
 
     return parser.parse_args()
 
@@ -65,6 +65,7 @@ def isValidQC(path):
     return (Path(path) / "exe/qcprog.exe").exists()
 
 
+# FIXME: split validate() over several functions
 def validate(args):
     """Validates CLI args and environmental variables, setting the latter as necessary"""
     invalid = 0
@@ -74,7 +75,7 @@ def validate(args):
         print("Input file", args.input, "is not a file!")
 
     if args.output is None:
-        args.output = args.input.with_suffix(".out")
+        args.output = Path(args.input.with_suffix(".out").name)
 
     if args.output.exists():
         invalid += 1
@@ -141,28 +142,32 @@ def getScript(args):
 
     script = []
 
-    name = args.input.stem
-    scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
-    # temp    = args.qcscratch / Path(name).with_suffix("." + str(time.time() % 10))    
+    runname = args.input.stem
+    rundir = args.qcscratch / runname
+    infile = args.input.absolute()
+    outfile = rundir.with_suffix(".out")
+
     script.append('#!/bin/sh')
     script.append('echo job starts at $(date)')
     script.append('echo')
-    script.append(f'mkdir -p {scratch / args.outdir}')
 
     if args.indir is not None:
-        # script.append(f'cp -a "{args.indir.absolute()}" "{temp}"')
-        # script.append(f'mv -T "{temp}" "{scratch / args.outdir}"')
         # trailing slash required to copy contents
-        script.append(f'rsync -ar "{args.indir.absolute()}/." "{scratch / args.outdir}"')
+        script.append(f'rsync -ar "{args.indir.absolute()}/." "{rundir}"')
 
-    script.append(f'cd "{scratch}"')
+    script.append(f'cd "{args.cwd}"')
 
-    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch / args.outdir}"')
-    if not args.save:
-        script.append(f"rm -rf {args.outdir}")
-        
-    # trailing slash required to copy contents from scratch
-    script.append(f'rsync -ar "{scratch}/." "{args.cwd}"')
+    if args.save:
+        script.append(f'$QC/bin/qchem -save "{infile}" "{outfile}" "{runname}"')
+        script.append(f'rsync -ar "{rundir}/." "{args.cwd/args.outdir}"')
+    else:
+        script.append(f'$QC/bin/qchem "{infile}" "{outfile}" "{runname}"')
+
+    script.append(f'cat "{outfile}"')
+
+    script.append(f'rm "{outfile}"')
+    script.append(f'rm -r "{rundir}"')
+
     script.append('echo')
     script.append('echo job completes at $(date)')
     
@@ -186,7 +191,6 @@ def main():
     if args.save:
         args.outdir.mkdir(parents=True, exist_ok=True)
 
-    # FIXME: Use the qchem script to support multi-job files with @@@
     script = getScript(args)
 
     qsub = ["qsub", "-V", "-j", "oe",

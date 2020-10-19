@@ -1,3 +1,7 @@
+2020-10-19  Vale Cofer-Shabica  <valecs@sas.upenn.edu>
+
+	* qchem-pbs: Now use the qchem script and multi-job files with @@@
+
 2020-10-16  Vale Cofer-Shabica  <valecs@sas.upenn.edu>
 
 	* qchem-pbs: Added --save option to retain scratch files. The default behavior is *not* to save scratch files; saved files will go to ODIR
