@@ -16,7 +16,7 @@ Invocation is often as simple as:
 
 ```qchem-pbs myqcjob.in```
 
-Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing output to `myqcjob.out` with scratch files saved in `./run`.
+Which will schedule the job to be executed on a node in `$QCSCRATCH`, writing output to `myqcjob.out`. If you desire scratch files, append `--save` and they will be saved in `./run`.
 
 See `qchem-pbs -h` for help and more options including threads for parallel jobs and selecting memory limits.
 

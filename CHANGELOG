@@ -1,6 +1,6 @@
 2020-10-16  Vale Cofer-Shabica  <valecs@sas.upenn.edu>
 
-	* qchem-pbs: Added --save option to retain scratch files. The default behavior is *not* to save scratch files; saved files will go to ODIR/scratch
+	* qchem-pbs: Added --save option to retain scratch files. The default behavior is *not* to save scratch files; saved files will go to ODIR
 	* qchem-pbs: Renamed --in-dir and --out-dir flags to --indir and --outdir respectively
 
 2020-10-06  Vale Cofer-Shabica  <valecs@sas.upenn.edu>

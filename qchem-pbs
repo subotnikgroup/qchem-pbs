@@ -39,11 +39,11 @@ def getArgs():
                         help="Max memory in MB; defaults to 8192")
     parser.add_argument("--branch", "-b", metavar="BRANCH", type=Path,
                         help="Full path to Q-Chem branch; if $QCRT is set, may simply be name of branch below $QCRT")
-    parser.add_argument("--outdir", metavar="ODIR", default="./run",
-                        type=Path, help="Path to output files; defaults to ./run")
     parser.add_argument("--save", default=False, action='store_true', help="save scratch files to ODIR/scratch")
+    parser.add_argument("--outdir", metavar="ODIR", default="./run",
+                        type=Path, help="Path to output scratch files; defaults to ./run")
     parser.add_argument("--indir", metavar="IDIR", type=Path,
-                        help="Path to input directory for restartable jobs (ODIR/scratch from a previous job)")
+                        help="Path to input directory for restartable jobs (ODIR from a previous job)")
     parser.add_argument("--wall", "-w", metavar="WALL", default=120, type=float, help="max wall-clock time in hours")
 
     return parser.parse_args()
@@ -100,6 +100,10 @@ def validate(args):
         invalid += 1
         print("Input directory", args.indir, "is not a directory!")
 
+    if args.outdir.is_absolute():
+        invalid +=1
+        printf("The argument to --outdir must be a relative path!")
+
     if args.branch is not None:
         if isValidQC(args.branch):
             env("QC", args.branch)
@@ -139,28 +143,26 @@ def getScript(args):
 
     name = args.input.stem
     scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
-    temp    = args.qcscratch / Path(name).with_suffix("." + str(time.time() % 10))
-    # Where QChem will actually run from
-    run = Path("scratch")
-    
+    # temp    = args.qcscratch / Path(name).with_suffix("." + str(time.time() % 10))    
     script.append('#!/bin/sh')
     script.append('echo job starts at $(date)')
     script.append('echo')
-    script.append(f'mkdir -p {scratch / run}')
+    script.append(f'mkdir -p {scratch / args.outdir}')
 
     if args.indir is not None:
-        script.append(f'cp -a "{args.indir.absolute()}" "{temp}"')
-        script.append(f'mv -T "{temp}" "{scratch / run}"')
+        # script.append(f'cp -a "{args.indir.absolute()}" "{temp}"')
+        # script.append(f'mv -T "{temp}" "{scratch / args.outdir}"')
+        # trailing slash required to copy contents
+        script.append(f'rsync -ar "{args.indir.absolute()}/." "{scratch / args.outdir}"')
 
     script.append(f'cd "{scratch}"')
 
-    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch / run}"')
+    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch / args.outdir}"')
     if not args.save:
-        script.append(f"rm -rf {run}")
+        script.append(f"rm -rf {args.outdir}")
         
-    #script.append(f'mv -T "{scratch}" "{args.outdir.absolute()}"')
     # trailing slash required to copy contents from scratch
-    script.append(f'rsync -ar "{scratch}/." "{args.outdir.absolute()}"')
+    script.append(f'rsync -ar "{scratch}/." "{args.cwd}"')
     script.append('echo')
     script.append('echo job completes at $(date)')
     
@@ -170,6 +172,7 @@ def getScript(args):
 def main():
     args = getArgs()
     invalid = validate(args)  # validates & sets $QCTHREADS, $QC, etc...
+    args.cwd=Path(".").absolute()
 
     if invalid > 0:
         print(invalid, "invalid option(s); cannot proceed")
@@ -180,7 +183,8 @@ def main():
     if args.dry_run:
         exit(0)
 
-    args.outdir.mkdir(parents=True, exist_ok=True)
+    if args.save:
+        args.outdir.mkdir(parents=True, exist_ok=True)
 
     # FIXME: Use the qchem script to support multi-job files with @@@
     script = getScript(args)
