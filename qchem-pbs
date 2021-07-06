@@ -45,6 +45,8 @@ def getArgs():
     parser.add_argument("--indir", metavar="IDIR", type=Path,
                         help="Path to input directory for restartable jobs (ODIR from a previous job)")
     parser.add_argument("--wall", "-w", metavar="WALL", default=12, type=float, help="max wall-clock time in hours (defaults to 12)")
+    parser.add_argument("--bare", default=False, action='store_true', help="use bare qcprog.exe instead of qchem script")
+    parser.add_argument("--coredump", default=False, action='store_true', help="save a core-dump in the event of a crash")
 
     return parser.parse_args()
 
@@ -136,6 +138,41 @@ def validate(args):
     return invalid
 
 
+def getScript_bare(args):
+    """Calls qcprog.exe directly"""
+    
+    script = []
+
+    name = args.input.stem
+    scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
+
+    script.append('#!/bin/sh')
+    script.append('echo job starts at $(date)')
+    script.append('echo')
+    script.append(f'mkdir -p {scratch / args.outdir}')
+
+    if args.indir is not None:
+        # trailing slash required to copy contents
+        script.append(f'rsync -ar "{args.indir.absolute()}/." "{scratch / args.outdir}"')
+
+    script.append(f'cd "{scratch}"')
+
+    # optionally save a core dump
+    if args.coredump:
+        script.append(f'ulimit -c unlimited')
+
+    script.append(f'$QC/exe/qcprog.exe "{args.input.absolute()}" "{scratch / args.outdir}"')
+    if not args.save:
+        script.append(f"rm -rf {args.outdir}")
+        
+    # trailing slash required to copy contents from scratch
+    script.append(f'rsync -ar "{scratch}/." "{args.cwd}"')
+    script.append('echo')
+    script.append('echo job completes at $(date)')
+    
+    return b"\n".join(map(lambda s: bytes(s, encoding="ascii"), script))
+
+
 def getScript(args):
     """This function works by building up a list of shell (or pbs)
     statements and then joining them all together in a bytestream"""
@@ -157,11 +194,15 @@ def getScript(args):
 
     script.append(f'cd "{args.cwd}"')
 
+    # optionally save a core dump
+    if args.coredump:
+        script.append(f'ulimit -c unlimited')
+    
     if args.save:
         script.append(f'$QC/bin/qchem -save "{infile}" "{outfile}" "{runname}"')
         script.append(f'rsync -ar "{rundir}/." "{args.cwd/args.outdir}"')
     else:
-        script.append(f'$QC/bin/qchem "{infile}" "{outfile}" "{runname}"')
+        script.append(f'$QC/bin/qchem -nt {args.threads} "{infile}" "{outfile}" "{runname}"')
 
     script.append(f'cat "{outfile}"')
 
@@ -191,7 +232,10 @@ def main():
     if args.save:
         args.outdir.mkdir(parents=True, exist_ok=True)
 
-    script = getScript(args)
+    if args.bare:
+        script = getScript_bare(args)
+    else:
+        script = getScript(args)
 
     qsub = ["qsub", "-V", "-j", "oe",
             "-o", str(args.output.absolute()),
