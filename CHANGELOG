@@ -1,3 +1,8 @@
+2021-08-11  Vale Cofer-Shabica  <valecs@sas.upenn.edu>
+
+	* qchem-pbs: using branches now adds $QC/lib to LID_LIBRARY_PATH
+
+
 2021-07-06  Vale Cofer-Shabica  <valecs@sas.upenn.edu>
 
 	* qchem-pbs: added the --coredump flag to generate coredumps

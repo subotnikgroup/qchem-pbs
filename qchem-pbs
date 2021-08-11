@@ -51,7 +51,7 @@ def getArgs():
     return parser.parse_args()
 
 
-def env(key, value=None):
+def env(key, value=None, prepend=False):
     """Returns or sets an environmental variable"""
     if value is None:
         if key in os.environ.keys():
@@ -59,7 +59,10 @@ def env(key, value=None):
         else:
             return ""
     else:
-        os.environ[key] = str(value)
+        if prepend:
+            os.environ[key] = str(value) + ':' + os.environ[key]
+        else:
+            os.environ[key] = str(value)
 
 
 def isValidQC(path):
@@ -116,6 +119,7 @@ def validate(args):
         else:
             print("branch", args.branch, "cannot be found and/or $QCRT not set!")
             invalid += 1
+        env("LD_LIBRARY_PATH", args.branch / "lib", prepend=True)
 
     if not isValidQC(env("QC")):
         invalid += 1
