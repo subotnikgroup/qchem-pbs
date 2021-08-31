@@ -230,16 +230,23 @@ def main():
     else:
         print("Finished checking input.")
 
+    if args.bare:
+        script = getScript_bare(args)
+    else:
+        script = getScript(args)
+
     if args.dry_run:
+        print("[qchem-pbs] script:")
+        print(script.decode('ascii'))
+        print("\n\n")
+        print("[qchem-pbs] environment:")
+        for k in os.environ.keys():
+            print(k,"=", os.environ[k])
         exit(0)
 
     if args.save:
         args.outdir.mkdir(parents=True, exist_ok=True)
 
-    if args.bare:
-        script = getScript_bare(args)
-    else:
-        script = getScript(args)
 
     qsub = ["qsub", "-V", "-j", "oe",
             "-o", str(args.output.absolute()),
