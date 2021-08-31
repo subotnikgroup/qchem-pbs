@@ -120,6 +120,7 @@ def validate(args):
             print("branch", args.branch, "cannot be found and/or $QCRT not set!")
             invalid += 1
         env("LD_LIBRARY_PATH", args.branch / "lib", prepend=True)
+        env("QCPROG", args.branch / "exe/qcprog.exe")
 
     if not isValidQC(env("QC")):
         invalid += 1
