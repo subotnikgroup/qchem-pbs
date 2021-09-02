@@ -146,6 +146,7 @@ def validate(args):
     return invalid
 
 
+#FIXME: unify script generation so there's only 1 place to update
 def getScript_bare(args):
     """Calls qcprog.exe directly"""
     
@@ -205,9 +206,10 @@ def getScript(args):
     # optionally save a core dump
     if args.coredump:
         script.append(f'ulimit -c unlimited')
-    
+
+    # FIXME: prepare qcargs in 1 place so everything is updated together
     if args.save:
-        script.append(f'$QC/bin/qchem -nt {args.threads} -save "{infile}" "{outfile}" "{runname}"')
+        script.append(f'$QC/bin/qchem -save -nt {args.threads} "{infile}" "{outfile}" "{runname}"')
         script.append(f'rsync -ar "{rundir}/." "{args.cwd/args.outdir}"')
     else:
         script.append(f'$QC/bin/qchem -nt {args.threads} "{infile}" "{outfile}" "{runname}"')
