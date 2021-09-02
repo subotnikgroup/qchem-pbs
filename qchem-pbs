@@ -110,6 +110,9 @@ def validate(args):
         invalid +=1
         printf("The argument to --outdir must be a relative path!")
 
+    # FIXME: These won't get picked up if a user's .bashrc overwrites
+    # them when the job gets run; we need to do the change in the
+    # scripts
     if args.branch is not None:
         if isValidQC(args.branch):
             env("QC", args.branch)
@@ -204,7 +207,7 @@ def getScript(args):
         script.append(f'ulimit -c unlimited')
     
     if args.save:
-        script.append(f'$QC/bin/qchem -save "{infile}" "{outfile}" "{runname}"')
+        script.append(f'$QC/bin/qchem -nt {args.threads} -save "{infile}" "{outfile}" "{runname}"')
         script.append(f'rsync -ar "{rundir}/." "{args.cwd/args.outdir}"')
     else:
         script.append(f'$QC/bin/qchem -nt {args.threads} "{infile}" "{outfile}" "{runname}"')
