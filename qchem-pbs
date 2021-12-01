@@ -260,7 +260,7 @@ def main():
             "-N", str(args.input.stem),
             "-l", "nodes=1:ppn=" + str(args.threads),
             "-l", "mem=" + str(args.mem) + "mb",
-            "-l", "walltime=" + str(args.wall*3600),
+            "-l", "walltime=" + str(round(args.wall*3600)),
             ]
 
     # FIXME: might want to contol the submission partition;
@@ -270,7 +270,7 @@ def main():
               "--job-name=" + str(args.input.stem),
               "--ntasks=1", "--cpus-per-task=" + str(args.threads),
               "--mem=" + str(args.mem),       # MB are default units
-              "--time=" + str(args.wall*60),  # minutes are default interval
+              "--time=" + str(round(args.wall*60)),  # minutes are default interval
               ]
 
     if args.sbatch:
