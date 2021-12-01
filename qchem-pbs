@@ -46,6 +46,7 @@ def getArgs():
                         help="Path to input directory for restartable jobs (ODIR from a previous job)")
     parser.add_argument("--wall", "-w", metavar="WALL", default=12, type=float, help="max wall-clock time in hours (defaults to 12)")
     parser.add_argument("--bare", default=False, action='store_true', help="use bare qcprog.exe instead of qchem script")
+    parser.add_argument("--sbatch", default=False, action='store_true', help="submit via sbatch (slurm) rather than pbs")
     parser.add_argument("--coredump", default=False, action='store_true', help="save a core-dump in the event of a crash")
 
     return parser.parse_args()
@@ -262,7 +263,20 @@ def main():
             "-l", "walltime=" + str(args.wall*3600),
             ]
 
-    subprocess.run(qsub, input=script)
+    # FIXME: might want to contol the submission partition;
+    #   could do it via --partition or $SBATCH_PARTITION
+    sbatch = ["sbatch", "--export=ALL",
+              "--output=" + str(args.output.absolute()),
+              "--job-name=" + str(args.input.stem),
+              "--ntasks=1", "--cpus-per-task=" + str(args.threads),
+              "--mem=" + str(args.mem),       # MB are default units
+              "--time=" + str(args.wall*60),  # minutes are default interval
+              ]
+
+    if args.sbatch:
+        subprocess.run(sbatch, input=script)
+    else:
+        subprocess.run(qsub, input=script)
 
 
 if __name__ == "__main__":
