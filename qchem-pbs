@@ -15,6 +15,7 @@ import time
 
 ncpus = defaultdict(lambda: print("Warning: unknown cluster---thread limit may be unreliable!") or 1024,
                     {'venus': 48,
+                     'mustang': 48,
                      'diabatical': 32,
                      'helium': 32,  # FIXME: is this correct?
                      }
@@ -37,6 +38,8 @@ def getArgs():
                         help="Number of OpenMP threads to use; defaults to 4")
     parser.add_argument("--mem", "-m", metavar="MEMORY", default=8192, type=int,
                         help="Max memory in MB; defaults to 8192")
+    parser.add_argument("--queue", "-q", metavar="QUEUE", type=str,
+                        help="queue for job submission (optional)")
     parser.add_argument("--branch", "-b", metavar="BRANCH", type=Path,
                         help="Full path to Q-Chem branch; if $QCRT is set, may simply be name of branch below $QCRT")
     parser.add_argument("--save", default=False, action='store_true', help="save scratch files to ODIR/scratch")
@@ -272,6 +275,11 @@ def main():
               "--mem=" + str(args.mem),       # MB are default units
               "--time=" + str(round(args.wall*60)),  # minutes are default interval
               ]
+
+    if args.queue:
+        qsub.append("-q")
+        qsub.append(args.queue)
+
 
     if args.sbatch:
         subprocess.run(sbatch, input=script)
