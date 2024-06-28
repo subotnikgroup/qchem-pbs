@@ -157,7 +157,7 @@ def getScript_bare(args):
     script = []
 
     name = args.input.stem
-    scratch = args.qcscratch / Path(name).with_suffix("." + str(time.time()))
+    scratch = args.qcscratch / Path(name).with_suffix(f".{time.time()}.$PBS_JOBID")
 
     script.append('#!/bin/sh')
     script.append('echo job starts at $(date)')
@@ -186,6 +186,7 @@ def getScript_bare(args):
     return b"\n".join(map(lambda s: bytes(s, encoding="ascii"), script))
 
 
+# FIXME: unlike with --bare, we do not fully specify the run directory
 def getScript(args):
     """This function works by building up a list of shell (or pbs)
     statements and then joining them all together in a bytestream"""
