@@ -147,6 +147,9 @@ def validate(args):
         invalid += 1
         print("Q-Chem requires that the variable", "QCPLATFORM", "be set!")
 
+    if args.bare:
+        env("GUIFILE", args.input.stem + ".fchk")
+
     return invalid
 
 
